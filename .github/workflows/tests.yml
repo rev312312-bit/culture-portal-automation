@@ -1,24 +1,52 @@
 name: api-tests
+
+# 문화포털 화면은 해외 IP(GitHub 서버) 접속이 막혀 있어 CI 에서는 API 테스트만 실행함.
+# 화면(UI·BDD) 테스트는 국내 PC 에서 실행하고 리포트를 docs/reports 에 올림.
+
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [main]          # push 할 때는 API smoke 만 (운영 서버 부담 최소화)
+  workflow_dispatch:          # Actions 탭에서 수동 실행
+    inputs:
+      scope:
+        description: "실행 범위"
+        type: choice
+        options: [smoke, all]
+        default: smoke
+
+concurrency:
+  group: api-tests
+  cancel-in-progress: true
+
 jobs:
   api:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
       - name: Run API tests
         env:
           SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
-        run: pytest -m "api and smoke"
-      - uses: actions/upload-artifact@v4
+          SCOPE: ${{ inputs.scope || 'smoke' }}
+        run: |
+          if [ "$SCOPE" = "all" ]; then
+            pytest -m api
+          else
+            pytest -m "api and smoke"
+          fi
+
+      - name: Upload report
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: api-report
           path: reports/

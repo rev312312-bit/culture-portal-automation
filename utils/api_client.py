@@ -18,6 +18,12 @@ from config import settings
 
 _last_call = 0.0
 
+# 페이징 파라미터 이름 (2026-10-01 실측)
+# 공식 사용가이드 예시는 cPage·rows 이지만 실제로는 무시되고,
+# 응답 태그와 같은 PageNo·numOfrows(대소문자 구분)만 동작함 → 관찰사항 OBS-001
+PAGE_PARAM = "PageNo"
+ROWS_PARAM = "numOfrows"
+
 
 def _throttle(interval: float) -> None:
     """직전 호출 뒤 interval 초가 지나기 전이면 기다림."""
@@ -122,20 +128,20 @@ class CultureApiClient:
     # ── 오퍼레이션별 단축 메서드 ────────────────────────────────────────────
     def period(self, from_: str, to: str, page: int = 1, rows: int = 10, **extra) -> ApiResponse:
         """기간별 문화정보 목록 (from/to: YYYYMMDD)"""
-        return self.get("period2", **{"from": from_, "to": to, "PageNo": page, "numOfrows": rows, **extra})
+        return self.get("period2", **{"from": from_, "to": to, PAGE_PARAM: page, ROWS_PARAM: rows, **extra})
 
     def area(self, area_value: str, from_: str, to: str, rows: int = 10, **extra) -> ApiResponse:
         """지역별 문화정보 목록 — 파라미터 이름은 settings.AREA_PARAM"""
         return self.get(
             "area2",
-            **{settings.AREA_PARAM: area_value, "from": from_, "to": to, "PageNo": 1, "numOfrows": rows, **extra},
+            **{settings.AREA_PARAM: area_value, "from": from_, "to": to, PAGE_PARAM: 1, ROWS_PARAM: rows, **extra},
         )
 
     def realm(self, realm_value: str, from_: str, to: str, rows: int = 10, **extra) -> ApiResponse:
         """분야별 문화정보 목록 — 파라미터 이름은 settings.REALM_PARAM"""
         return self.get(
             "realm2",
-            **{settings.REALM_PARAM: realm_value, "from": from_, "to": to, "PageNo": 1, "numOfrows": rows, **extra},
+            **{settings.REALM_PARAM: realm_value, "from": from_, "to": to, PAGE_PARAM: 1, ROWS_PARAM: rows, **extra},
         )
 
     def detail(self, seq: str | int) -> ApiResponse:

@@ -9,7 +9,7 @@
 | 대상 | 문화포털 실서버 (화면 + 한국문화정보원 Open API) |
 | 언어·도구 | Python · Playwright · pytest · pytest-bdd · requests |
 | 범위 | 즐겨요 문화정보 영역 (한눈에 보는 문화정보, 내 주변 문화콘텐츠, 문화캘린더) |
-| 실행 | 로컬/Codespaces, GitHub Actions |
+| 실행 | API: Codespaces·GitHub Actions / 화면: 국내 PC (해외 IP 접속 차단) |
 
 > 시나리오 출처: SW 테스팅 교육과정 팀 프로젝트에서 작성한 문화포털 수동 TC 중
 > 본인 담당 영역인 '즐겨요 문화정보'를 중심으로 선정했습니다. (팀 산출물 기반)
@@ -63,7 +63,25 @@ scripts/            설치·접속 확인 스크립트
 - **데이터 변동 대응:** 결과 건수를 고정값으로 비교하지 않고, '선택한 조건과 결과가 일치하는지' 같은 규칙으로 검증
 - **인증키 관리:** 코드에 넣지 않고 `.env`(로컬)와 GitHub Secrets(CI)로 관리. 활용기간 만료 시 오류 31
 
-## 시작하기 (GitHub Codespaces)
+## 실행 환경이 나뉘는 이유
+
+문화포털 화면은 해외 IP에서 접속이 되지 않습니다(Codespaces·GitHub Actions 접속 시간 초과, 2026-10-01 확인).
+Open API는 해외에서도 정상 호출됩니다. 그래서 실행 환경을 나눴습니다.
+
+| 테스트 | 실행 환경 |
+|---|---|
+| API 테스트 | Codespaces, GitHub Actions (push 마다 자동) |
+| 화면(UI·BDD) 테스트 | 국내 PC — 결과 리포트를 `docs/reports/` 에 올림 |
+
+## 자동화로 찾은 것
+
+| ID | 구분 | 내용 |
+|---|---|---|
+| API_DF_001 | 결함 | 잘못된 날짜 형식(`2026-10-01`)을 오류로 거부하지 않고, 기간 조건을 무시한 전체 목록(정상 코드 00)을 반환함 |
+| OBS-001 | 관찰 | 공식 사용가이드의 페이징 파라미터(`cPage`·`rows`)는 무시되고, `PageNo`·`numOfrows`(대소문자 구분)만 동작함 |
+| OBS-002 | 관찰 | 썸네일 주소가 https 가 아닌 http 로 제공됨 |
+
+## 시작하기 (GitHub Codespaces — API 테스트)
 
 1. 저장소에서 **Code → Codespaces → Create codespace on main**
 2. 터미널에서 설치
@@ -85,10 +103,20 @@ scripts/            설치·접속 확인 스크립트
 6. 결과: `reports/report.html` (실패한 화면 테스트는 `test-results/` 에 스크린샷·trace 저장)
    - trace 파일은 내려받아 [trace.playwright.dev](https://trace.playwright.dev) 에 끌어다 놓으면 단계별 화면을 볼 수 있음
 
+## 화면 테스트 실행 (국내 윈도우 PC)
+
+```powershell
+py -m pip install -r requirements.txt
+py -m playwright install chromium
+py -m pytest -m ui --headed      # 브라우저가 움직이는 모습을 보며 실행
+```
+
+화면 테스트에는 인증키가 필요 없습니다. 공용 PC에는 `.env` 를 만들지 않습니다.
+
 ## GitHub Actions
 
-- `main` 에 push 하면 smoke 테스트 실행
-- Actions 탭 → tests → Run workflow 에서 범위(smoke/all)와 브라우저(chromium/firefox/webkit) 선택
+- `main` 에 push 하면 API smoke 테스트 실행
+- Actions 탭 → api-tests → Run workflow 에서 범위(smoke/all) 선택
 - 저장소 Settings → Secrets and variables → Actions 에 `SERVICE_KEY` 등록 필요
 
 ## 확인 필요 항목 (진행 중)
@@ -98,6 +126,6 @@ scripts/            설치·접속 확인 스크립트
 | 한눈에 보는 문화정보 목록 주소 | `config/settings.py` PAGES | 화면 주소창 |
 | 문화캘린더 주소 | `config/settings.py` PAGES | 화면 주소창 |
 | 화면 로케이터 | `pages/*.py` 각 클래스 상단 | 실패 시 trace 로 확인 후 수정 |
-| area2·realm2 파라미터 이름 | `config/settings.py` | 공공데이터포털 미리보기 |
+| area2·realm2 파라미터 이름 | `config/settings.py` | 공공데이터포털 미리보기 (페이징처럼 가이드와 다를 수 있어 실측 필요) |
 | 분야 코드 12개 | `data/test_data.json` | 공공데이터포털 미리보기 |
 | livelihood2 파라미터 | `tests/api/test_calendar_api.py` | 공공데이터포털 미리보기 |
