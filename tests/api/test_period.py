@@ -39,6 +39,8 @@ def test_API_기간_경계값_002_하루짜리_기간(api, today):
 
 
 @pytest.mark.regression
+@pytest.mark.known_defect("API_DF_001")
+@pytest.mark.xfail(reason="알려진 결함 API_DF_001: 잘못된 날짜 형식을 거부하지 않고 기간 조건을 무시한 목록을 반환함", raises=AssertionError, strict=True)
 def test_API_기간_형식_001_하이픈_날짜형식(api, today):
     res = api.period(from_=f"{today:%Y-%m}-01", to=f"{today:%Y%m}28")
     assert not (res.ok and res.items), f"잘못된 날짜 형식인데 목록이 반환됨: {res.summary()}"

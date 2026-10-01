@@ -122,20 +122,20 @@ class CultureApiClient:
     # ── 오퍼레이션별 단축 메서드 ────────────────────────────────────────────
     def period(self, from_: str, to: str, page: int = 1, rows: int = 10, **extra) -> ApiResponse:
         """기간별 문화정보 목록 (from/to: YYYYMMDD)"""
-        return self.get("period2", **{"from": from_, "to": to, "cPage": page, "rows": rows, **extra})
+        return self.get("period2", **{"from": from_, "to": to, "PageNo": page, "numOfrows": rows, **extra})
 
     def area(self, area_value: str, from_: str, to: str, rows: int = 10, **extra) -> ApiResponse:
         """지역별 문화정보 목록 — 파라미터 이름은 settings.AREA_PARAM"""
         return self.get(
             "area2",
-            **{settings.AREA_PARAM: area_value, "from": from_, "to": to, "cPage": 1, "rows": rows, **extra},
+            **{settings.AREA_PARAM: area_value, "from": from_, "to": to, "PageNo": 1, "numOfrows": rows, **extra},
         )
 
     def realm(self, realm_value: str, from_: str, to: str, rows: int = 10, **extra) -> ApiResponse:
         """분야별 문화정보 목록 — 파라미터 이름은 settings.REALM_PARAM"""
         return self.get(
             "realm2",
-            **{settings.REALM_PARAM: realm_value, "from": from_, "to": to, "cPage": 1, "rows": rows, **extra},
+            **{settings.REALM_PARAM: realm_value, "from": from_, "to": to, "PageNo": 1, "numOfrows": rows, **extra},
         )
 
     def detail(self, seq: str | int) -> ApiResponse:
