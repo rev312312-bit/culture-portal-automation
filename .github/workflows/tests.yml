@@ -1,0 +1,60 @@
+name: tests
+
+on:
+  push:
+    branches: [main]          # push 할 때는 smoke 만 실행 (운영 서버 부담 최소화)
+  workflow_dispatch:          # Actions 탭에서 수동 실행
+    inputs:
+      scope:
+        description: "실행 범위"
+        type: choice
+        options: [smoke, all]
+        default: smoke
+      browser:
+        description: "브라우저"
+        type: choice
+        options: [chromium, firefox, webkit]
+        default: chromium
+
+concurrency:
+  group: tests
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BROWSER: ${{ inputs.browser || 'chromium' }}
+      SCOPE: ${{ inputs.scope || 'smoke' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps "$BROWSER"
+
+      - name: Run tests
+        env:
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+        run: |
+          if [ "$SCOPE" = "all" ]; then
+            pytest --browser "$BROWSER"
+          else
+            pytest -m smoke --browser "$BROWSER"
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ env.BROWSER }}
+          path: |
+            reports/
+            test-results/
